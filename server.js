@@ -12,7 +12,8 @@ app.use(cors());
 
 // Route Definitions
 app.get('/location', locationHandler);
-app.get('/weather', weatherHandler)
+app.get('/weather', weatherHandler);
+app.get('/yelp', restaurantHandler);
 app.use('*', notFoundHandler);
 app.use(errorHandler);
 
@@ -45,9 +46,11 @@ function weatherHandler(request, response) {
 function restaurantHandler(request, response) {
   const restaurantsData = require('./data/restaurants.json');
   const arrayOfRestaurants = restaurantsData.nearby_restaurants;
+  const restaurantsResults = [];
   arrayOfRestaurants.forEach(restaurantObj => {
-    
+    restaurantsResults.push(new Restaurant(restaurantObj));
   });
+  response.send(restaurantsResults);
 }
 
 // Constructors
@@ -61,6 +64,14 @@ function Location(city, locationData) {
 function Weather(weatherObj) {
   this.time = weatherObj.datetime;
   this.forecast = weatherObj.weather.description;
+}
+	
+function Restaurant(obj) {
+  this.name = obj.restaurant.name;
+  this.url = obj.restaurant.url;
+  this.rating = obj.restaurant.user_rating.aggregate_rating;
+  this.price = obj.restaurant.price_range;
+  this.image_url = obj.restaurant.featured_image;
 }
 
 // App listener

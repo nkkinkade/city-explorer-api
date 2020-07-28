@@ -42,7 +42,7 @@ function weatherHandler(request, response) {
   });
   response.status(200).send(weatherResults);
 }
-	
+
 function restaurantHandler(request, response) {
   const restaurantsData = require('./data/restaurants.json');
   const arrayOfRestaurants = restaurantsData.nearby_restaurants;
@@ -65,7 +65,7 @@ function Weather(weatherObj) {
   this.time = weatherObj.datetime;
   this.forecast = weatherObj.weather.description;
 }
-	
+
 function Restaurant(obj) {
   this.name = obj.restaurant.name;
   this.url = obj.restaurant.url;

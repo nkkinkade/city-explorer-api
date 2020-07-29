@@ -65,10 +65,7 @@ function weatherHandler(request, response) {
     })
     .then(weatherResponse => {
       const arrayOfWeatherData = weatherResponse.body.data;
-      const weatherResults = [];
-      arrayOfWeatherData.forEach(location => {
-        weatherResults.push(new Weather(location));
-      });
+      const weatherResults = arrayOfWeatherData.map(weather => new Weather(weather));
       response.send(weatherResults)
     })
     .catch(err => {
@@ -94,10 +91,7 @@ function restaurantHandler(request, response) {
     .set('Authorization', `Bearer ${process.env.YELP_KEY}`)
     .then(yelpResponse => {
       const arrayOfRestaurants = yelpResponse.body.businesses;
-      const restaurantsResults = [];
-      arrayOfRestaurants.forEach(restaurantObj => {
-        restaurantsResults.push(new Restaurant(restaurantObj));
-      });
+      const restaurantsResults = arrayOfRestaurants.map(restaurantObj => new Restaurant(restaurantObj));
       response.send(restaurantsResults);
     })
     .catch(err => {
@@ -120,10 +114,7 @@ function trailsHandler(request, response) {
     .then(trailResponse => {
       console.log(trailResponse.body);
       const arrayOfTrailData = trailResponse.body.trails;
-      const trailResults = [];
-      arrayOfTrailData.forEach(trail => {
-        trailResults.push(new Trails(trail));
-      });
+      const trailResults = arrayOfTrailData.map(trail => new Trails(trail));
       response.send(trailResults);
     })
     .catch(err => {

@@ -57,10 +57,12 @@ function locationHandler(request, response) {
 function weatherHandler(request, response) {
   const weatherData = require('./data/weather.json');
   const arrayOfWeathers = weatherData.data;
-  const weatherResults = [];
-  arrayOfWeathers.forEach((weather) => {
-    weatherResults.push(new Weather(weather));
-  });
+  // const weatherResults = [];
+  // arrayOfWeathers.forEach((weather) => {
+  //   weatherResults.push(new Weather(weather));
+  // });
+  const weatherResults = arrayOfWeathers.map(weather => new Weather(weather));
+
   response.status(200).send(weatherResults);
 }
 

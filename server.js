@@ -4,6 +4,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+const superagent = require('superagent');
 
 // Application Setup
 const app = express();
@@ -26,11 +27,31 @@ function errorHandler(error, request, response, next) {
   response.status(500).json({ error: true, message: error.message });
 }
 
+// function locationHandler(request, response) {
+//   const city = 'seattle';
+//   const locationData = require('./data/location.json');
+//   const location = new Location(city, locationData);
+//   response.status(200).send(location);
+// }
+
 function locationHandler(request, response) {
-  const city = 'seattle';
-  const locationData = require('./data/location.json');
-  const location = new Location(city, locationData);
-  response.status(200).send(location);
+  const city = request.query.city;
+  const url = 'https://us1.locationiq.com/v1/search.php';
+  superagent.get(url)
+    .query({
+      key: process.env.LOCATION_KEY,
+      q: city,
+      format: 'json'
+    })
+    .then(locationIQResponse => {
+    	const topLocation = locationIQResponse.body[0];
+      const myLocationResponse = new Location(city, topLocation);
+      response.status(200).send(myLocationResponse);
+    })
+    .catch(err => {
+      console.log(err);
+      errorHandler(err, request, response);
+    });
 }
 
 function weatherHandler(request, response) {
@@ -54,11 +75,11 @@ function restaurantHandler(request, response) {
 }
 
 // Constructors
-function Location(city, locationData) {
+function Location(city, location) {
   this.search_query = city;
-  this.formatted_query = locationData[0].display_name;
-  this.latitude = parseFloat(locationData[0].lat);
-  this.longitude = parseFloat(locationData[0].lon);
+  this.formatted_query = location.display_name;
+  this.latitude = parseFloat(location.lat);
+  this.longitude = parseFloat(location.lon);
 }
 
 function Weather(weatherObj) {

@@ -5,11 +5,17 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const superagent = require('superagent');
+const pg = require('pg');
 
 // Application Setup
 const app = express();
 const PORT = process.env.PORT;
 app.use(cors());
+if (!process.env.DATABASE_URL) {
+  throw new Error('Missing database URL');
+}
+const client = new pg.Client(process.env.DATABASE_URL)
+client.on('error', err => { throw err; });
 
 // Route Definitions
 app.get('/', rootHandler);
@@ -34,23 +40,49 @@ function errorHandler(error, request, response, next) {
 }
 
 function locationHandler(request, response) {
-  const city = request.query.city;
-  const url = 'https://us1.locationiq.com/v1/search.php';
-  superagent.get(url)
-    .query({
-      key: process.env.LOCATION_KEY,
-      q: city,
-      format: 'json'
-    })
+  const city = request.query.city.toLowerCase().trim();
+  getLocationData(city)
     .then(locationIQResponse => {
-      const topLocation = locationIQResponse.body[0];
-      const myLocationResponse = new Location(city, topLocation);
-      response.status(200).send(myLocationResponse);
+      // const topLocation = locationIQResponse.body[0];
+      // const myLocationResponse = new Location(city, topLocation);
+      // response.status(200).send(myLocationResponse);
     })
     .catch(err => {
       console.log(err);
       errorHandler(err, request, response);
     });
+  // const url = 'https://us1.locationiq.com/v1/search.php';
+  // superagent.get(url)
+  //   .query({
+  //     key: process.env.LOCATION_KEY,
+  //     q: city,
+  //     format: 'json'
+  //   })
+  //   .then(locationIQResponse => {
+  //     const topLocation = locationIQResponse.body[0];
+  //     const myLocationResponse = new Location(city, topLocation);
+  //     response.status(200).send(myLocationResponse);
+  //   })
+  //   .catch(err => {
+  //     console.log(err);
+  //     errorHandler(err, request, response);
+  //   });
+}
+
+function getLocationData(city) {
+  const SQL = 'SELECT * FROM locations WHERE search_query = $1';
+  const values = [city];
+  return client.query(SQL, values)
+    .then((results) => {
+      console.log(results);
+    });
+  // const url = 'https://us1.locationiq.com/v1/search.php';
+  // superagent.get(url)
+  //   .query({
+  //     key: process.env.LOCATION_KEY,
+  //     q: city,
+  //     format: 'json'
+  //   });
 }
 
 function weatherHandler(request, response) {
@@ -109,7 +141,7 @@ function trailsHandler(request, response) {
       key: process.env.TRAILS_KEY,
       lat: latitude,
       lon: longitude,
-      maxDistance: 200
+      maxDistance: 60
     })
     .then(trailResponse => {
       console.log(trailResponse.body);
@@ -157,4 +189,11 @@ function Trails(trail) {
 }
 
 // App listener
-app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
+client.connect()
+  .then(() => {
+    console.log('Postgres connected.');
+    app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
+  })
+  .catch(err => {
+    throw `Postgres error: ${err.message}`;
+  })

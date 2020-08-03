@@ -42,31 +42,13 @@ function errorHandler(error, request, response, next) {
 function locationHandler(request, response) {
   const city = request.query.city.toLowerCase().trim();
   getLocationData(city)
-    .then(locationIQResponse => {
-      // const topLocation = locationIQResponse.body[0];
-      // const myLocationResponse = new Location(city, topLocation);
-      // response.status(200).send(myLocationResponse);
+    .then(locationData => {
+      response.status(200).send(locationData);
     })
     .catch(err => {
       console.log(err);
       errorHandler(err, request, response);
     });
-  // const url = 'https://us1.locationiq.com/v1/search.php';
-  // superagent.get(url)
-  //   .query({
-  //     key: process.env.LOCATION_KEY,
-  //     q: city,
-  //     format: 'json'
-  //   })
-  //   .then(locationIQResponse => {
-  //     const topLocation = locationIQResponse.body[0];
-  //     const myLocationResponse = new Location(city, topLocation);
-  //     response.status(200).send(myLocationResponse);
-  //   })
-  //   .catch(err => {
-  //     console.log(err);
-  //     errorHandler(err, request, response);
-  //   });
 }
 
 function getLocationData(city) {
@@ -74,15 +56,36 @@ function getLocationData(city) {
   const values = [city];
   return client.query(SQL, values)
     .then((results) => {
-      console.log(results);
+      if(results.rowCount > 0){
+        return results.rows[0];
+      }else{
+        const url = 'https://us1.locationiq.com/v1/search.php';
+        return superagent.get(url)
+          .query({
+            key: process.env.LOCATION_KEY,
+            q: city,
+            format: 'json'
+          })
+          .then((data) => {
+          	console.log(data);
+            return setLocationData(city, data.body[0]);
+          });
+      }
     });
-  // const url = 'https://us1.locationiq.com/v1/search.php';
-  // superagent.get(url)
-  //   .query({
-  //     key: process.env.LOCATION_KEY,
-  //     q: city,
-  //     format: 'json'
-  //   });
+}
+
+function setLocationData(city, locationData) {
+  const location = new Location(city, locationData);
+  const SQL = `
+    INSERT INTO locations (search_query, formatted_query, latitude, longitude)
+    VALUES ($1, $2, $3, $4)
+	RETURNING *;
+  `;
+  const values = [city, location.formatted_query, location.latitude, location.longitude];
+  return client.query(SQL, values)
+    .then(results => {
+      return results.rows[0]
+    });
 }
 
 function weatherHandler(request, response) {
